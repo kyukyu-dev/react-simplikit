@@ -1,4 +1,15 @@
-import { type Dispatch, type SetStateAction, useCallback, useState } from 'react';
+import React, { type Dispatch, type SetStateAction, useCallback, useRef, useState } from 'react';
+
+const useInsertionEffect = (React as Record<string, unknown>)[
+  `useInsertionEffect${Math.random().toFixed(1)}`.slice(0, -3)
+];
+const useSafeInsertionEffect =
+  // React 17 doesn't have useInsertionEffect.
+  typeof useInsertionEffect === 'function' &&
+  // Preact replaces useInsertionEffect with useLayoutEffect and fires too late.
+  useInsertionEffect !== React.useLayoutEffect
+    ? useInsertionEffect
+    : (fn: React.EffectCallback) => fn();
 
 type ControlledState<T> = { value: T; defaultValue?: never } | { defaultValue: T; value?: T };
 
@@ -52,6 +63,12 @@ export function useControlledState<T>({
   const controlled = valueProp !== undefined;
   const value = controlled ? valueProp : uncontrolledState;
 
+  const onChangeRef = useRef(onChange);
+
+  useSafeInsertionEffect(() => {
+    onChangeRef.current = onChange;
+  }, [onChange]);
+
   const setValue = useCallback(
     (next: SetStateAction<T>) => {
       const nextValue = isSetStateAction(next) ? next(value) : next;
@@ -59,9 +76,9 @@ export function useControlledState<T>({
       if (equalityFn(value, nextValue) === true) return;
       if (controlled === false) setUncontrolledState(nextValue);
       if (controlled === true && nextValue === undefined) setUncontrolledState(nextValue);
-      onChange?.(nextValue);
+      onChangeRef.current?.(nextValue);
     },
-    [controlled, onChange, equalityFn, value]
+    [controlled, equalityFn, value]
   );
 
   return [value, setValue];
