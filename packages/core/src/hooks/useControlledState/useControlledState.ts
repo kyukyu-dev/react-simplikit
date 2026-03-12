@@ -1,6 +1,7 @@
 import React, { type Dispatch, type SetStateAction, useCallback, useReducer, useRef, useState } from 'react';
 
 const useSafeInsertionEffect: typeof React.useLayoutEffect =
+  /* c8 ignore next */
   typeof document !== 'undefined' ? (React['useInsertionEffect'] ?? React.useLayoutEffect) : () => {};
 
 type ControlledState<T> = { value: T; defaultValue?: never } | { defaultValue: T; value?: T };
